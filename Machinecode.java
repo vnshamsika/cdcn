@@ -1,5 +1,5 @@
 
-import java.util.Scanner;
+import java.util.*;
 
 public class Machinecode {
 
@@ -18,7 +18,76 @@ public class Machinecode {
         }
     }
 
+    static String exp;
+    static int pos = 0;
+
+    // Parse expression: + and -
+    static Node expression() {
+        Node node = term();
+
+        while (pos < exp.length()) {
+            char op = exp.charAt(pos);
+
+            if (op == '+' || op == '-') {
+                pos++;
+                Node right = term();
+                node = new Node(String.valueOf(op), node, right);
+            } else {
+                break;
+            }
+        }
+        return node;
+    }
+
+    // Parse term: * and /
+    static Node term() {
+        Node node = factor();
+
+        while (pos < exp.length()) {
+            char op = exp.charAt(pos);
+
+            if (op == '*' || op == '/') {
+                pos++;
+                Node right = factor();
+                node = new Node(String.valueOf(op), node, right);
+            } else {
+                break;
+            }
+        }
+        return node;
+    }
+
+    // Parse operands and brackets
+    static Node factor() {
+
+        if (pos < exp.length() && exp.charAt(pos) == '(') {
+            pos++;
+            Node node = expression();
+
+            if (pos >= exp.length() || exp.charAt(pos) != ')')
+                throw new RuntimeException("Missing closing bracket");
+
+            pos++;
+            return node;
+        }
+
+        int start = pos;
+
+        while (pos < exp.length() &&
+              (Character.isLetterOrDigit(exp.charAt(pos)) ||
+               exp.charAt(pos) == '_')) {
+            pos++;
+        }
+
+        if (start == pos)
+            throw new RuntimeException("Invalid expression");
+
+        return new Node(exp.substring(start, pos));
+    }
+
+    // Generate machine instructions
     static void generate(Node root) {
+
         if (root == null)
             return;
 
@@ -34,12 +103,15 @@ public class Machinecode {
             case "+":
                 System.out.println("ADD");
                 break;
+
             case "-":
                 System.out.println("SUB");
                 break;
+
             case "*":
                 System.out.println("MUL");
                 break;
+
             case "/":
                 System.out.println("DIV");
                 break;
@@ -47,19 +119,26 @@ public class Machinecode {
     }
 
     public static void main(String[] args) {
+
         Scanner sc = new Scanner(System.in);
 
-        System.out.println("Expression: a + b * c");
+        System.out.print("Enter expression: ");
+        exp = sc.nextLine().replaceAll("\\s+", "");
 
-        Node a = new Node("a");
-        Node b = new Node("b");
-        Node c = new Node("c");
+        try {
+            pos = 0;
 
-        Node multiply = new Node("*", b, c);
-        Node root = new Node("+", a, multiply);
+            Node root = expression();
 
-        System.out.println("Generated Machine Instructions:");
-        generate(root);
+            if (pos != exp.length())
+                throw new RuntimeException("Invalid expression");
+
+            System.out.println("Generated Machine Instructions:");
+            generate(root);
+
+        } catch (RuntimeException e) {
+            System.out.println("Invalid expression!");
+        }
 
         sc.close();
     }
